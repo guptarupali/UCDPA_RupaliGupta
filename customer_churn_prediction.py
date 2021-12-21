@@ -27,6 +27,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 
+# Hyperparameter Tuning
+from sklearn.model_selection import GridSearchCV
+
 # Forward Neural Network
 from keras.models import Sequential, load_model
 from keras import layers
@@ -313,6 +316,28 @@ y_pred_svm_prob = support_vector_m.predict_proba(X_test)
 confusion_matrix_plot(X_train, y_train, X_test, y_test, support_vector_m, y_pred_svm, 'SVM')
 roc_curve_auc_score(X_test, y_test, y_pred_svm_prob, 'SVM')
 precision_recall_curve_and_scores(X_test, y_test, y_pred_svm, y_pred_svm_prob, 'SVM')
+
+
+#*****************************Step 8: Hyperparameter Tuning/Model Improvement*********************
+
+#K Nearest Neighbors (Optimized)
+
+#Define parameter grid for GridSearch and instanciate and train model.
+param_grid = {'n_neighbors': np.arange(1, 30)}
+knn = KNeighborsClassifier()
+knn_cv = GridSearchCV(knn, param_grid, cv=5)
+knn_cv.fit(X_train, y_train)
+# Make predictions (classes and probabilities) with the trained model on the test set.
+y_pred_knn_tuned = knn_cv.predict(X_test)
+y_pred_knn_tuned_prob = knn_cv.predict_proba(X_test)
+
+print('KNN best number of neighbors:', knn_cv.best_params_, '\n')
+# Plot model evaluations.
+confusion_matrix_plot(X_train, y_train, X_test, y_test, knn_cv, y_pred_knn_tuned, 'KNN (tuned)')
+roc_curve_auc_score(X_test, y_test, y_pred_knn_tuned_prob, 'KNN (tuned)')
+precision_recall_curve_and_scores(X_test, y_test, y_pred_knn_tuned, y_pred_knn_tuned_prob, 'KNN (tuned)')
+
+
 
 # Feed Forward Neural Network
 # Instanciate NN, build up layer structure and compile model
