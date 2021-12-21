@@ -29,6 +29,7 @@ from sklearn.svm import SVC
 
 # Hyperparameter Tuning
 from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
 
 # Forward Neural Network
 from keras.models import Sequential, load_model
@@ -338,6 +339,60 @@ roc_curve_auc_score(X_test, y_test, y_pred_knn_tuned_prob, 'KNN (tuned)')
 precision_recall_curve_and_scores(X_test, y_test, y_pred_knn_tuned, y_pred_knn_tuned_prob, 'KNN (tuned)')
 
 
+# Logistic Regression (Optimized)
+
+#Define parameter grid for GridSearch and instanciate and train model.
+
+param_grid_L1 = {'penalty': ['l1', 'l2'], 'C': np.arange(.1, 5, .1)}
+logreg_tuned = LogisticRegression(solver='saga', max_iter=1000)
+logreg_tuned_gs = GridSearchCV(logreg_tuned, param_grid_L1, cv=5)
+logreg_tuned_gs.fit(X_train, y_train)
+# Make predictions (classes and probabilities) with the trained model on the test set.
+y_pred_logreg_tuned = logreg_tuned_gs.predict(X_test)
+y_pred_logreg_tuned_prob = logreg_tuned_gs.predict_proba(X_test)
+print('Logistic Regression - Best Parameters: ', logreg_tuned_gs.best_params_)
+
+
+# Plot model evaluations.
+confusion_matrix_plot(X_train, y_train, X_test, y_test, logreg_tuned_gs, y_pred_logreg_tuned, 'Log. Regression (tuned)')
+roc_curve_auc_score(X_test, y_test, y_pred_logreg_tuned_prob, 'Log. Regression (tuned)')
+precision_recall_curve_and_scores(X_test, y_test, y_pred_logreg_tuned, y_pred_logreg_tuned_prob, 'Log. Regression (tuned)')
+
+# Random Forest (Optimized)
+#Define parameter grid for RandomizedSearch and instanciate and train model.
+param_grid_rf = {'n_estimators': np.arange(10, 2000, 10),
+                 'max_features': ['auto', 'sqrt'],
+                 'max_depth': np.arange(10, 200, 10),
+                 'criterion': ['gini', 'entropy'],
+                 'bootstrap': [True, False]}
+rf = RandomForestClassifier()
+rf_random_grid = RandomizedSearchCV(estimator=rf, param_distributions=param_grid_rf, cv=5, verbose=0)
+rf_random_grid.fit(X_train, y_train)
+# Make predictions (classes and probabilities) with the trained model on the test set.
+y_pred_rf_tuned = rf_random_grid.predict(X_test)
+y_pred_rf_tuned_prob = rf_random_grid.predict_proba(X_test)
+
+print('Random Forest - Best Parameters: ', rf_random_grid.best_params_)
+# Plot model evaluations.
+confusion_matrix_plot(X_train, y_train, X_test, y_test, rf_random_grid, y_pred_rf_tuned, 'Random Forest (tuned)')
+roc_curve_auc_score(X_test, y_test, y_pred_rf_tuned_prob, 'Random Forest (tuned)')
+precision_recall_curve_and_scores(X_test, y_test, y_pred_rf_tuned, y_pred_rf_tuned_prob, 'Random Forest (tuned)')
+
+# Support Vector Machine
+#Define parameter grid for GridSearch and instanciate and train model.
+param_grid_svm = {'C': np.arange(.1, 3, .1)}
+support_vector_m = SVC(kernel='linear', probability=True)
+support_vector_m_tuned = GridSearchCV(support_vector_m, param_grid_svm, cv=5)
+support_vector_m_tuned.fit(X_train, y_train)
+# Make predictions (classes and probabilities) with the trained model on the test set.
+y_pred_svm_tuned = support_vector_m_tuned.predict(X_test)
+y_pred_svm_tuned_prob = support_vector_m_tuned.predict_proba(X_test)
+
+print('SVM best C value', support_vector_m_tuned.best_params_, '\n')
+# Plot model evaluations.
+confusion_matrix_plot(X_train, y_train, X_test, y_test, support_vector_m_tuned, y_pred_svm_tuned, 'SVM (tuned)')
+roc_curve_auc_score(X_test, y_test, y_pred_svm_tuned_prob, 'SVM (tuned)')
+precision_recall_curve_and_scores(X_test, y_test, y_pred_svm_tuned, y_pred_svm_tuned_prob, 'SVM (tuned)')
 
 # Feed Forward Neural Network
 # Instanciate NN, build up layer structure and compile model
