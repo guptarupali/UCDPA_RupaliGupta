@@ -33,6 +33,9 @@ from keras import layers
 from keras.layers.core import Dropout
 from keras.callbacks import ModelCheckpoint
 from tensorflow.python import tf2
+from tensorflow.python.keras import engine
+
+
 
 df = pd.read_csv('customer-churn-data.csv')
 
@@ -375,3 +378,33 @@ def plot_history(fit_keras):
     plt.legend()
 
     plot_history(fit_nn)
+
+# Make predictions (classes and probabilities) with the trained model on the test set.
+y_pred_nn = best_nn.predict(X_test)
+y_pred_nn_prob = best_nn.predict_proba(X_test)
+y_pred_nn_classes = best_nn.predict_classes(X_test)
+# Reduce to 1d array.
+y_pred_nn_prob_1 = y_pred_nn_prob[:,0]
+y_pred_nn_classes_1 = y_pred_nn_classes[:,0]
+
+# Print NN evaluation metrics.
+
+nn_conf_matrix = confusion_matrix(y_test, y_pred_nn_classes_1)
+print(f'Confusion Matrix:\n{nn_conf_matrix}')
+print("-----------------------------------------")
+
+nn_accuracy = accuracy_score(y_test, y_pred_nn_classes_1)
+print('Accuracy: %f' % nn_accuracy)
+
+nn_auc = roc_auc_score(y_test, y_pred_nn_prob_1)
+print('ROC AUC: %f' % nn_auc)
+print("-----------------------------------------")
+
+nn_precision = precision_score(y_test, y_pred_nn_classes_1)
+print('Precision: %f' % nn_precision)
+
+nn_recall = recall_score(y_test, y_pred_nn_classes_1)
+print('Recall: %f' % nn_recall)
+
+nn_f1 = f1_score(y_test, y_pred_nn_classes_1)
+print('F1 score: %f' % nn_f1)
