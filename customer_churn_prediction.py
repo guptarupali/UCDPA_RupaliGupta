@@ -2,16 +2,23 @@
 # The key challenge is to predict if an individual customer will churn or not.
 # To accomplish that, machine learning models are trained based on 80% of the sample data.
 # The remaining 20% are used to apply the trained models and assess their predictive power with regards to "churn / not churn".
-# We will also determine features which actually drive customer churn.
+# Will also determine features which actually drive customer churn.
 
 # **********Step 2: Data Collection*******************
-import inline as inline
 
+# Import relevant libraries
+# Data analysis
 import pandas as pd
 import numpy as np
+
+# Data visualisation
 from matplotlib import pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
+
+# Regex & time
+import re
+import time
 
 # Model training
 from sklearn.model_selection import train_test_split
@@ -40,12 +47,18 @@ from tensorflow.python import tf2
 from tensorflow.python.keras import engine
 
 
+# Import the dataset
 
 df = pd.read_csv('customer-churn-data.csv')
 
-#***********Step 3: Exploratory Data Analysis***********
+# ***********Step 3: Exploratory Data Analysis***********
+
+# Evaluate data structure
 # Show the features (=columns) and first data entries of the data frame.
 df.head(5)
+
+#  Retrieving data shape
+print(df.shape)
 
 # Get a summary on the data frame incl. data types, shape and memory storage.
 df.info()
@@ -58,10 +71,15 @@ for i in df.columns:
     print(f"Unique {i}'s count: {df[i].nunique()}")
     print(f"{df[i].unique()}\n")
 
-#*****************Data Preprocessing for EDA*********************
+# *****************Data Preprocessing for EDA*********************
 
-# Changing the data tyoe of "TotalCharges" and "tenure" to float.
+# Changing the data type of "TotalCharges" and "tenure" to float.
 df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
+# Null observations of the TotalCharges column
+print(df[df['TotalCharges'].isnull()])
+
+# Drop observations with null values- use of Regex
+df['TotalCharges'] = df['TotalCharges'].replace(' ', np.nan)
 
 def feature_to_float(feature_list, df):
     for i in feature_list:
@@ -70,9 +88,15 @@ def feature_to_float(feature_list, df):
 
 feature_to_float(['tenure'], df)
 
+
+# Applying Regex to remove (automatic) from payment method names
+df['PaymentMethod'] = df['PaymentMethod'].apply(lambda x: re.sub(' (automatic)', ' ', x))
+
+
 # Renaming the data values of "PaymentMethod" for better readability.
-payment_column = {'Electronic check': 'E-Check' , 'Mailed check': 'Mailed Check', 'Bank transfer (automatic)': 'Bank Transfer', 'Credit card (automatic)': 'Credit Card'}
+payment_column = {'Electronic check': 'E-Check', 'Mailed check': 'Mailed Check', 'Bank transfer (automatic)': 'Bank Transfer', 'Credit card (automatic)': 'Credit Card'}
 df["PaymentMethod"].replace(payment_column, inplace=True)
+
 
 # Checking the data types for any unintended data types.
 df.dtypes
@@ -80,7 +104,7 @@ df.dtypes
 # Counting the number of missing values.
 df.isna().sum()
 
-#*****************Data Exploration*********************
+# *****************Data Exploration*********************
 
 # Apply the Fivethirtyeight style to all plots.
 plt.style.use("fivethirtyeight")
@@ -128,21 +152,21 @@ def countplot(x, y, df):
 # Generate countplots for various features.
 countplot("Churn", ['SeniorCitizen', 'Contract', 'Partner', 'Dependents', 'PaymentMethod', 'InternetService'], df)
 
-#****************Check for Outliers in Numerical Features****************************
+# ****************Check for Outliers in Numerical Features****************************
 
 # Check of outliers by applying the IQR method checking if values are way outside the IQR borders.
 numerical_features = ["tenure", "MonthlyCharges", "TotalCharges"]
 df_num = df[numerical_features]
 df_num.describe()
 
-#*************************Data Cleaning**************************
+# *************************Data Cleaning**************************
 
 # Drop the rows with missing values.
 df = df.dropna()
 
-#**********************Step 4: Feature Engineering****************
+# **********************Step 4: Feature Engineering****************
 
-# Drop customerID feature.
+# Drop customerID feature as it is not required
 df = df.drop(columns='customerID')
 # Generate new feature "Number_AdditionalServices" by summing up the number of add-on services consumed.
 df['Number_AdditionalServices'] = (df[['OnlineSecurity', 'DeviceProtection', 'StreamingMovies', 'TechSupport', 'StreamingTV', 'OnlineBackup']] == 'Yes').sum(axis=1)
@@ -168,8 +192,6 @@ features_ohe = ['MultipleLines', 'InternetService', 'OnlineSecurity', 'OnlineBac
 df = pd.get_dummies(df, columns=features_ohe)
 
 # Min-Max-Scaling for identified columns.
-
-
 features_mms = ['tenure', 'MonthlyCharges', 'TotalCharges']
 df_features_mms = pd.DataFrame(df, columns=features_mms)
 df_remaining_features = df.drop(columns=features_mms)
@@ -181,9 +203,9 @@ df_rescaled_features = pd.DataFrame(rescaled_features, columns=features_mms, ind
 
 df = pd.concat([df_remaining_features, df_rescaled_features], axis=1)
 
-#************************Step 5: Train-Test-Split***************************
+# ************************Step 5: Train-Test-Split***************************
 
-#Applying sklearn's splitter function train_test_split
+# Applying sklearn's splitter function train_test_split
 
 X1 = df.drop('Churn', axis=1)
 X = X1.values
@@ -192,7 +214,7 @@ y = df['Churn'].values
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 
-#****************Step 6: Model Evaluation Metrics*******************
+# ****************Step 6: Model Evaluation Metrics*******************
 
 # Define a function that plots the feature weights for a classifier.
 def feature_weights(X_df, classifier, classifier_name):
@@ -265,7 +287,8 @@ def precision_recall_curve_and_scores(X_test, y_test, y_pred, y_pred_probabiliti
 # ******************Step 7: Model Selection, Training, Prediction and Assessment************************
 
 # K Nearest Neighbors
-# Instanciate and train the KNN classifier based on the training set.
+# Instantiate and train the KNN classifier based on the training set
+
 knn = KNeighborsClassifier()
 knn.fit(X_train, y_train)
 # Make predictions (classes and probabilities) with the trained classifier on the test set.
@@ -276,9 +299,9 @@ confusion_matrix_plot(X_train, y_train, X_test, y_test, knn, y_pred_knn, 'KNN')
 roc_curve_auc_score(X_test, y_test, y_pred_knn_prob, 'KNN')
 precision_recall_curve_and_scores(X_test, y_test, y_pred_knn, y_pred_knn_prob, 'KNN')
 
-#***************Logistic Regression*********************
+# Logistic Regression
 
-# Instanciate and train the logistic regression model based on the training set.
+# Instantiate and train the logistic regression model based on the training set.
 logreg = LogisticRegression(max_iter=1000)
 logreg.fit(X_train, y_train)
 LogisticRegression(max_iter=1000)
@@ -294,7 +317,7 @@ roc_curve_auc_score(X_test, y_test, y_pred_logreg_prob, 'Log. Regression')
 precision_recall_curve_and_scores(X_test, y_test, y_pred_logreg, y_pred_logreg_prob, 'Log. Regression')
 
 # Random Forest
-# Instanciate and train the random forest model based on the training set.
+# Instantiate and train the random forest model based on the training set.
 rf = RandomForestClassifier()
 rf.fit(X_train, y_train)
 # Make predictions (classes and probabilities) with the trained model on the test set.
@@ -307,7 +330,7 @@ precision_recall_curve_and_scores(X_test, y_test, y_pred_rf, y_pred_rf_prob, 'Ra
 
 # Support Vector Machine
 
-# Instanciate and train the SVM model on the training set.
+# Instantiate and train the SVM model on the training set.
 support_vector_m = SVC(kernel='rbf', probability=True)
 support_vector_m.fit(X_train,y_train)
 # Make predictions (classes and probabilities) with the trained model on the test set.
@@ -319,11 +342,11 @@ roc_curve_auc_score(X_test, y_test, y_pred_svm_prob, 'SVM')
 precision_recall_curve_and_scores(X_test, y_test, y_pred_svm, y_pred_svm_prob, 'SVM')
 
 
-#*****************************Step 8: Hyperparameter Tuning/Model Improvement*********************
+# *****************************Step 8: Hyperparameter Tuning/Model Improvement*********************
 
-#K Nearest Neighbors (Optimized)
+# K Nearest Neighbors (Optimized)
 
-#Define parameter grid for GridSearch and instanciate and train model.
+# Define parameter grid for GridSearch and instanciate and train model.
 param_grid = {'n_neighbors': np.arange(1, 30)}
 knn = KNeighborsClassifier()
 knn_cv = GridSearchCV(knn, param_grid, cv=5)
@@ -341,7 +364,7 @@ precision_recall_curve_and_scores(X_test, y_test, y_pred_knn_tuned, y_pred_knn_t
 
 # Logistic Regression (Optimized)
 
-#Define parameter grid for GridSearch and instanciate and train model.
+# Define parameter grid for GridSearch and instanciate and train model.
 
 param_grid_L1 = {'penalty': ['l1', 'l2'], 'C': np.arange(.1, 5, .1)}
 logreg_tuned = LogisticRegression(solver='saga', max_iter=1000)
@@ -359,7 +382,7 @@ roc_curve_auc_score(X_test, y_test, y_pred_logreg_tuned_prob, 'Log. Regression (
 precision_recall_curve_and_scores(X_test, y_test, y_pred_logreg_tuned, y_pred_logreg_tuned_prob, 'Log. Regression (tuned)')
 
 # Random Forest (Optimized)
-#Define parameter grid for RandomizedSearch and instanciate and train model.
+# Define parameter grid for RandomizedSearch and instanciate and train model.
 param_grid_rf = {'n_estimators': np.arange(10, 2000, 10),
                  'max_features': ['auto', 'sqrt'],
                  'max_depth': np.arange(10, 200, 10),
@@ -379,7 +402,7 @@ roc_curve_auc_score(X_test, y_test, y_pred_rf_tuned_prob, 'Random Forest (tuned)
 precision_recall_curve_and_scores(X_test, y_test, y_pred_rf_tuned, y_pred_rf_tuned_prob, 'Random Forest (tuned)')
 
 # Support Vector Machine
-#Define parameter grid for GridSearch and instanciate and train model.
+# Define parameter grid for GridSearch and instanciate and train model.
 param_grid_svm = {'C': np.arange(.1, 3, .1)}
 support_vector_m = SVC(kernel='linear', probability=True)
 support_vector_m_tuned = GridSearchCV(support_vector_m, param_grid_svm, cv=5)
@@ -395,7 +418,7 @@ roc_curve_auc_score(X_test, y_test, y_pred_svm_tuned_prob, 'SVM (tuned)')
 precision_recall_curve_and_scores(X_test, y_test, y_pred_svm_tuned, y_pred_svm_tuned_prob, 'SVM (tuned)')
 
 # Feed Forward Neural Network
-# Instanciate NN, build up layer structure and compile model
+# Instantiate NN, build up layer structure and compile model
 nn = Sequential()
 Input_Shape = X_train.shape[1]
 
