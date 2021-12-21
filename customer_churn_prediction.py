@@ -106,6 +106,53 @@ df.isna().sum()
 
 # *****************Data Exploration*********************
 
+# Quantitative features and analysis with different plots
+features = ['MonthlyCharges', 'tenure']
+df[features].hist(figsize=(10, 4))
+
+# Density plots
+df[features].plot(kind='density', subplots=True, layout=(1, 2),
+                  sharex=False, figsize=(10, 4))
+x = df['MonthlyCharges']
+sns.distplot(x)
+
+# Box plot
+
+_, axes = plt.subplots(1, 2, sharey=True, figsize=(10, 4))
+sns.boxplot(x='Churn', y='MonthlyCharges', data=df, ax=axes[0])
+
+# Violin plot
+sns.violinplot(x='Churn', y='MonthlyCharges', data=df, ax=axes[1])
+
+
+num_cols = ['tenure', 'MonthlyCharges', 'TotalCharges']
+df[num_cols].describe()
+sns.set(style='whitegrid')
+sns.pairplot(df[['tenure', 'MonthlyCharges', 'TotalCharges', 'Churn']], hue='Churn', plot_kws=dict(alpha=.3, edgecolor='none'), height=2, aspect=1.1)
+
+fig, ax = plt.subplots(1, 3, figsize=(15, 3))
+df[df.Churn == 'No'][num_cols].hist(bins=35, color='blue', alpha=0.5, ax=ax)
+df[df.Churn == 'Yes'][num_cols].hist(bins=35, color='orange', alpha=0.7, ax=ax)
+plt.legend(['No Churn', 'Churn'], shadow=True, loc=9)
+
+# scatterplot
+_, ax = plt.subplots(1, 2, figsize=(16, 6))
+sns.scatterplot(x="TotalCharges", y="tenure" , hue="Churn", data=df, ax=ax[0])
+sns.scatterplot(x="MonthlyCharges", y="tenure", hue="Churn", data=df, ax=ax[1])
+
+# Facegrid
+facet = sns.FacetGrid(df, hue="Churn", aspect = 3)
+facet.map(sns.kdeplot, "TotalCharges", shade=True)
+facet.set(xlim=(0, df["TotalCharges"].max()))
+facet.add_legend()
+
+facet = sns.FacetGrid(df, hue="Churn", aspect=3)
+facet.map(sns.kdeplot, "MonthlyCharges", shade=True)
+facet.set(xlim=(0, df["MonthlyCharges"].max()))
+facet.add_legend()
+
+# ****************************
+
 # Apply the Fivethirtyeight style to all plots.
 plt.style.use("fivethirtyeight")
 
